@@ -5,7 +5,7 @@ require_once './TiledWatermark.class.php';
 $test = TiledWatermark::getInstance();
 
 $config = array(
-	 # 设置绘制类型'img'图片水印，'txt'文字水印
+     # 设置绘制类型'img'图片水印，'txt'文字水印
      'draw_type' => 'img',
      # 背景图片，支持jpeg,png
      'draw_bg' => './resources/test.jpg',
