@@ -14,6 +14,9 @@ class TiledWatermark
       private static $_instance;
       private $use_size_array = true;
       private $is_run = false;
+      private $horizontal = 0;
+      private $vertical = 0;
+      private $font_size = 12;
       # 基础配置
       private $all_config = array();
 
@@ -32,13 +35,13 @@ class TiledWatermark
       }
 
       /** 
-      * mime类型 
+      * mime类型 file ext
       * 
       * @var array 
       */ 
       private static $mime_types = array(
-            2 => 'jpeg', 
-            3 => 'png' 
+            2 => array('jpeg', '.jpg'), 
+            3 => array('png', '.png')
       ); 
 
       /** 
@@ -46,19 +49,18 @@ class TiledWatermark
       * 
       * @var array 
       *
-      * 参数分别为：背景width范围,font-size,对应offset坐标位置偏移量
+      * 参数分别为：背景width范围,font-size,x以及y坐标位置偏移量
       * 可根据实际使用情况调整以达到最佳显示效果
       */
       private $size_array = array( 
-            400 => array(12, 140), 
-            800 => array(16, 200),
-            1200 => array(18, 220),
-            1500 => array(22, 350),
-            1800 => array(30, 400),
-            2000 => array(38, 470),
-            2500 => array(50, 600),
-            3500 => array(60, 700),
-            'max_size' => array(68, 760)
+            320 => array(12, 120, 55), 
+            480 => array(13, 130, 60),
+            700 => array(14, 140, 80),
+            1200 => array(18, 180, 100),
+            1900 => array(26, 280, 120),
+            2500 => array(36, 430, 180),
+            3200 => array(52, 630, 260),
+            'max_size' => array(66, 730, 280)
       );
 
       /** 
@@ -86,7 +88,8 @@ class TiledWatermark
             }
 
             # 检查图片类型
-            if(!isset($tmp_data[2]) || !isset(self::$mime_types[$tmp_data[2]])) { 
+
+            if(!isset($tmp_data[2]) || !isset(self::$mime_types[$tmp_data[2]][0])) { 
                   trigger_error('路径：' . $this->image_path . '不被允许的'.$this->image_type_name.'图片类型！', E_USER_ERROR); 
             }
 
@@ -249,10 +252,10 @@ class TiledWatermark
                         {
                               if($img_max < $size && isset($v[0]) && isset($v[1]))
                               { 
-                                    $this->all_config['font_size'] = (int)$v[0];
+                                    $this->font_size = (int)$v[0];
                                      
-                                    $this->all_config['horizontal'] = (int)$v[1]; 
-                                    $this->all_config['vertical'] = (int)$v[1]; 
+                                    $this->horizontal = (int)$v[1]; 
+                                    $this->vertical = (int)$v[2];
                                     $font_set = true; 
                                     break; 
                               } 
@@ -262,9 +265,9 @@ class TiledWatermark
                   # 设置最大尺寸 
                   if(!$font_set && isset($this->size_array['max_size'][0]) && isset($this->size_array['max_size'][1]))
                   { 
-                        $this->all_config['font_size'] = (int)$this->size_array['max_size'][0]; 
-                        $this->all_config['horizontal'] = (int)$this->size_array['max_size'][1]; 
-                        $this->all_config['vertical'] = (int)$this->size_array['max_size'][1]; 
+                        $this->font_size = (int)$this->size_array['max_size'][0]; 
+                        $this->horizontal = (int)$this->size_array['max_size'][1]; 
+                        $this->vertical = (int)$this->size_array['max_size'][1]; 
                   } 
             }
 
@@ -279,7 +282,7 @@ class TiledWatermark
             else
             { 
                   # 按需生成图像资源 
-                  $f = 'imagecreatefrom' . self::$mime_types[$this->tmp_data[2]];
+                  $f = 'imagecreatefrom' . self::$mime_types[$this->tmp_data[2]][0];
                   $img = $f($this->all_config['draw_bg']); 
             } 
 
@@ -310,13 +313,13 @@ class TiledWatermark
 
             $i = $max_x = 0; 
             $points = array(); 
-            for($x = $p; $x < $this->img_w; $x += $this->all_config['horizontal'])
+            for($x = $p; $x < $this->img_w; $x += $this->horizontal)
             { 
                   if($x > $max_x)
                   { 
                         $max_x = $x; 
                   } 
-                  for($y = $p; $y < $this->img_h; $y += $this->all_config['vertical'])
+                  for($y = $p; $y < $this->img_h; $y += $this->vertical)
                   { 
                         $points[$i] = array('x' => $x, 'y' => $y); 
                         if($this->all_config['shadow'])
@@ -336,19 +339,19 @@ class TiledWatermark
                         if(isset($m['x2']) && isset($m['y2']))
                         { 
                               # 绘制阴影 
-                              imagettftext($img, $this->all_config['font_size'], $this->all_config['rotate_angle'], $m['x2'], $m['y2'], 
+                              imagettftext($img, $this->font_size, $this->all_config['rotate_angle'], $m['x2'], $m['y2'], 
                                     $wm_shadow_color, $this->all_config['font_file'], $this->all_config['watermark_text']); 
                         } 
 
                         # 绘制水印
-                        imagettftext($img, $this->all_config['font_size'], $this->all_config['rotate_angle'], $m['x'], $m['y'], $wm_color, 
+                        imagettftext($img, $this->font_size, $this->all_config['rotate_angle'], $m['x'], $m['y'], $wm_color, 
                         $this->all_config['font_file'], $this->all_config['watermark_text']); 
                         
                   }
                   break;
                   case 'img':
                   
-                  $f = 'imagecreatefrom' . self::$mime_types[$this->logo_tmp_data[2]]; 
+                  $f = 'imagecreatefrom' . self::$mime_types[$this->logo_tmp_data[2]][0]; 
                   $logo_img = $f($this->all_config['logo_img']);
 
 
@@ -366,10 +369,12 @@ class TiledWatermark
             if ($this->tmp_data[2] == 3 || (isset($this->logo_tmp_data[2]) && $this->logo_tmp_data[2] == 3))
             {
                   $f = 'imagepng';
+                  $o_ext = self::$mime_types[3][1];
             }
             else
             {
-                  $f = 'image' . self::$mime_types[$this->tmp_data[2]];
+                  $f = 'image' . self::$mime_types[$this->tmp_data[2]][0];
+                  $o_ext = self::$mime_types[$this->tmp_data[2]][1];
             }
             
             if(isset($this->logo_tmp_data[2]) && $this->logo_tmp_data[2] == 3)
@@ -382,8 +387,9 @@ class TiledWatermark
             }
 
             # 输出图像
-            header('Content-type: '.$this->out_image_mime); 
+            header('Content-type: '.$this->out_image_mime);
             $f($img);
+            //$f($img, './resources/newfile'. $o_ext);
             # 释放资源
             if (isset($logo_img))
             {
