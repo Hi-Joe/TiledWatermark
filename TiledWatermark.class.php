@@ -157,7 +157,7 @@ class TiledWatermark
                         } 
                   }
                   # 可以开始绘制水印
-                  $this->is_run; 
+                  $this->is_run = true; 
             } 
       }
 
